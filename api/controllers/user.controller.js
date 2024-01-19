@@ -15,7 +15,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   //check existing users
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
   if (existedUser) {
@@ -24,11 +24,19 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //local path
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  let coverImageLocalPath;
 
+  if (
+    req.files &&
+    req.files.coverImage &&
+    req.files.coverImage[0] &&
+    req.files.coverImage[0].path
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  }
   //check avatar
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar field is required");
+    throw new ApiError(400, "Avatar path is required");
   }
 
   //upload on cloudinary
@@ -44,7 +52,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     fullName,
     avatar: avatar.url,
-    coverImage: coverImage.url || "",
+    coverImage: coverImage?.url || "",
     email,
     password,
     username: username.toLowerCase(),
@@ -59,6 +67,6 @@ const registerUser = asyncHandler(async (req, res) => {
   //response
   return res
     .status(201)
-    .json(new ApiResponse(200, createdUser, "User Registered SuccessFully"));
+    .json(new ApiResponse(201, createdUser, "User Registered SuccessFully"));
 });
 export { registerUser };
